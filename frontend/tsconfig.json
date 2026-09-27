@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "jsx": "react-native",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "lib": ["ESNext"],
+    "types": ["jest", "@testing-library/jest-native", "node"]
+  },
+  "include": ["App.tsx", "src/**/*", "__tests__/**/*"],
+  "extends": "expo/tsconfig.base"
+}
