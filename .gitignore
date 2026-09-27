@@ -1,0 +1,29 @@
+# Binaries / build
+backend/api
+backend/*.test
+backend/coverage.out
+
+# Go
+*.exe
+*.out
+
+# Node / Expo
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/*.tgz
+
+# Env
+.env
+backend/.env.example
+frontend/.env
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Docker volumes (local)
+pgdata/
