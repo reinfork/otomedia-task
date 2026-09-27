@@ -2,30 +2,28 @@
 
 Greenfield implementation. Stack: **Go (Gin) + GORM + MySQL 8 + Redis (go-redis)** backend, **React Native + TypeScript (Expo)** frontend.
 
-> Note: earlier revision used PostgreSQL per request; this final build is **MySQL** as the original spec requires. Keyword search uses `LIKE` (MySQL's default `utf8mb4_0900_ai_ci` collation is case-insensitive, matching Postgres `ILIKE` semantics). Duplicate-title detection uses MySQL error `1062` plus a pre-check, returning `409` either way.
-
 ## Repo layout
 
 ```
 .
 ├── backend/
-│   ├── cmd/api/main.go                 # wiring: pg + redis + gin
-│   ├── internal/model/task.go          # Task + TaskFilter
-│   ├── internal/repository/            # GORM persistence, filtering/sort/pagination
-│   ├── internal/service/               # validation, 409/404 rules
-│   ├── internal/handler/               # Gin handlers, Redis cache, error envelope
-│   ├── pkg/db/mysql.go                # connect + AutoMigrate + unique index
-│   ├── pkg/cache/redis.go              # 60s cache, canonical key, invalidation
+│   ├── cmd/api/main.go                
+│   ├── internal/model/task.go        
+│   ├── internal/repository/          
+│   ├── internal/service/               
+│   ├── internal/handler/          
+│   ├── pkg/db/mysql.go               
+│   ├── pkg/cache/redis.go          
 │   ├── migrations/001_create_tasks.{up,down}.sql
 │   ├── Dockerfile
 │   └── .env.example
 ├── frontend/  (Expo, TypeScript)
-│   ├── App.tsx                         # TaskList screen + QueryClientProvider
-│   ├── src/api/client.ts               # axios client + types
-│   ├── src/hooks/useTasks.ts           # TanStack Query: list / update / delete
-│   ├── src/components/                 # SearchInput, StatusFilter, Pagination, EditModal, TaskCard, LoadingState
-│   └── __tests__/                      # SearchInput + TaskList tests
-├── docker-compose.yml                  # mysql:8 + redis:7 + api
+│   ├── App.tsx                         
+│   ├── src/api/client.ts               
+│   ├── src/hooks/useTasks.ts          
+│   ├── src/components/               
+│   └── __tests__/                
+├── docker-compose.yml                
 └── README.md
 ```
 
@@ -101,7 +99,7 @@ curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' \
   -d '{"title":"Fix login","status":"todo","assignee":"budi"}'
 ```
 
-## Redis caching (Task 2)
+## Redis caching
 
 - `GET /api/tasks` cached **60s** (`TaskListTTL`).
 - Key = `tasks:list:<canonical-sorted-querystring>` via `BuildTasksKey` — **includes query params**, order-independent (`pkg/cache/redis.go`).
@@ -109,7 +107,7 @@ curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' \
 - `X-Cache: HIT/MISS` header for observability; cache failure never fails the request (falls through to DB).
 - Unit-tested with `miniredis`: key determinism, TTL=60s, invalidation (`pkg/cache/redis_test.go`).
 
-## Frontend (Task 3 + Task 4 fixes)
+## Frontend
 
 - `SearchInput` — debounced 300ms, drives `keyword`.
 - `StatusFilter` — `all/todo/in_progress/done` chips, drives `status`.
@@ -118,7 +116,7 @@ curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' \
 - `LoadingState` — `ActivityIndicator` + text; plus empty/error/retry states and pull-to-refresh.
 - Soft-deleted tasks never render (backend filters `deleted_at IS NULL`).
 
-## Testing (Task 5)
+## Testing
 
 ```bash
 cd backend && go test ./... -count=1
@@ -127,7 +125,3 @@ cd frontend && npm test
 
 - Backend: `service` (update, duplicate-409, search/filter/pagination, soft-delete-hides), `cache` (key includes params, 60s TTL, invalidation), `handler` (MISS→HIT, write-invalidates, 409 shape, PUT/DELETE flow, error envelope). SQLite + miniredis so no live infra needed.
 - Frontend: `SearchInput` debounce test (required: search or list) + `TaskList` card/pagination test (RNTL + jest-expo).
-
-## Evaluation mapping
-
-Go 35% (Gin+GORM layered code), SQL 10% (migration + partial unique index + trigram), Redis 15% (TTL/key/invalidate), Frontend 20% (5 required UI pieces), Testing 10%, Code Quality 5% (`go vet` clean, consistent errors), Docs 5% (this README).
